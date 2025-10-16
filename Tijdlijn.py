@@ -319,10 +319,18 @@ def load_and_prepare(path, sheet_name=None):
 
 
 # ---------- HTML Template (STACKED LAYOUT) ----------
-TEMPLATE_PATH = Path(__file__).with_name("timeline_template.html")
+TEMPLATE_PATH = Path("timeline_template.html")
 
 
 
+def load_html_template() -> str:
+    """Load the HTML visualisation template from disk."""
+    try:
+        return TEMPLATE_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(
+            f"HTML template not found: {TEMPLATE_PATH}"
+        ) from exc
 
 
 # ---------- HTML Generator ----------
@@ -334,8 +342,9 @@ def make_html(title, timed_segments, date_only, undated, unique_entities, px_per
         "date_only": date_only,
         "undated": undated,
     }
+    template = load_html_template()
     html = (
-        HTML_TEMPLATE
+        template
         .replace("%%TITLE%%", (title or "Tijdlijn").replace("\\", "\\\\").replace("</", "<\\/"))
         .replace("%%MIN_EVENT_MIN%%", str(int(min_event_minutes)))
         .replace("%%ALL_ENTITIES_JSON%%", json.dumps(unique_entities, ensure_ascii=False))
@@ -389,12 +398,12 @@ def build_timeline_notebook(
     return {"html": html, "saved_path": saved_path}
 
 
-input_path = ''
+input_path = 'Example.xlsx'
 sheet="Blad1"
 title="Tijdlijn"
 px_per_minute=0.4
 min_event_minutes=15
-output=''
+output='timeline.html'
 display_inline=False
 build_timeline_notebook(input_path,sheet,title,px_per_minute,min_event_minutes,output,display_inline)
 
