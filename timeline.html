@@ -22,7 +22,8 @@
       --small:12px;
       --body:14px;
       --sticky-top:0;
-      --lane-row-height:46px;
+      --lane-row-height:140px;
+      --lane-event-min-width:120px;
       --horizontal-hour:#e2e8f0;      
     }
     * { box-sizing: border-box; }
@@ -203,7 +204,7 @@
     .lane-timeline-inner{ position:relative; min-height:var(--lane-row-height); }
     .lane-timeline-inner::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(to right, transparent 0, transparent calc(60px - 1px), rgba(226,232,240,0.35) calc(60px - 1px), rgba(226,232,240,0.35) 60px); pointer-events:none; opacity:0.4; }
 
-    .lane-event{ position:absolute; display:flex; flex-direction:column; gap:6px; padding:10px; background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.45); border-left:4px solid var(--lane-color,#2563eb); border-radius:10px; box-shadow:0 4px 12px rgba(15,23,42,0.08); min-width:48px; color:#0f172a; }
+    .lane-event{ position:absolute; display:flex; flex-direction:column; gap:6px; padding:10px; background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.45); border-left:4px solid var(--lane-color,#2563eb); border-radius:10px; box-shadow:0 4px 12px rgba(15,23,42,0.08); min-width:var(--lane-event-min-width,120px); color:#0f172a; }
     .lane-event .time{ font-size:11px; font-weight:600; color:#0f172a; }
     .lane-event .desc{ font-size:var(--body); white-space:pre-wrap; }
     .lane-event .entities{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -302,7 +303,9 @@
     const ALL_ENTITIES = ["org B", "org A", "org C"];
     const HORIZONTAL_PX_PER_MIN = 1; // px per minuut in horizontale weergave
     const MINUTES_PER_DAY = 24 * 60;
-    const DAY_MS = 24 * 60 * 60 * 1000;    
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const MIN_LANE_EVENT_WIDTH = 120; // minimale breedte (in pixels) voor events in de horizontale weergave
+    const LANE_HEIGHT_PADDING = 16;   // extra pixels onderaan om schaduw/ruimte niet af te kappen
 
     // ------------------ UTIL ------------------
     const slugify = (t) => (t||"").toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-._~]/g,'');
@@ -970,12 +973,15 @@
         if(!Number.isFinite(end) || end <= start){
           end = start + MIN_EVENT_MIN;
         }
+        const minDurationMinutes = MIN_LANE_EVENT_WIDTH / meta.pxPerMin;
+        const visualDuration = Math.max(end - start, minDurationMinutes);
         const absStart = dayIndex * MINUTES_PER_DAY + start;
-        const absEnd = dayIndex * MINUTES_PER_DAY + end;
+        const absEnd = absStart + visualDuration;
         items.push({
           event: ev,
           absStart,
           absEnd,
+          displayDuration: visualDuration,
           startLocal: start,
           endLocal: end,
           dayIndex,
@@ -1121,14 +1127,16 @@
       inner.style.width = `${meta.timelineWidth}px`;
 
       const { items, laneCount } = buildLaneEvents(rec, meta);
-      inner.style.height = `calc(${laneCount} * var(--lane-row-height))`;
+      const laneRows = Math.max(1, laneCount);
+      inner.style.height = `calc(${laneRows} * var(--lane-row-height))`;
 
       for(const item of items){
         const ev = item.event;
         const card = document.createElement('article');
         card.className = 'lane-event';
         card.style.left = `${item.absStart * meta.pxPerMin}px`;
-        const width = Math.max((item.absEnd - item.absStart) * meta.pxPerMin, MIN_EVENT_MIN * meta.pxPerMin * 0.5);
+        const widthMinutes = item.displayDuration ?? (item.absEnd - item.absStart);
+        const width = Math.max(widthMinutes * meta.pxPerMin, MIN_LANE_EVENT_WIDTH);
         card.style.width = `${width}px`;
         card.style.top = `calc(${item.lane} * var(--lane-row-height))`;
         card.style.setProperty('--lane-color', color.color);
@@ -1175,6 +1183,23 @@
 
       timeline.appendChild(inner);
       body.appendChild(timeline);
+
+      if(items.length){
+        const adjustHeight = () => {
+          const baseHeight = inner.offsetHeight;
+          let maxBottom = 0;
+          inner.querySelectorAll('.lane-event').forEach(card => {
+            const bottom = card.offsetTop + card.offsetHeight;
+            if(bottom > maxBottom) maxBottom = bottom;
+          });
+          if(maxBottom){
+            const target = Math.max(baseHeight, Math.ceil(maxBottom + LANE_HEIGHT_PADDING));
+            inner.style.height = `${target}px`;
+          }
+        };
+        if(typeof queueMicrotask === 'function') queueMicrotask(adjustHeight);
+        else setTimeout(adjustHeight, 0);
+      }
 
       if(!items.length){
         const empty = document.createElement('div');
