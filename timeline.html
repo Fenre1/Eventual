@@ -22,6 +22,8 @@
       --small:12px;
       --body:14px;
       --sticky-top:0;
+      --lane-row-height:46px;
+      --horizontal-hour:#e2e8f0;      
     }
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; background:var(--bg); color:var(--ink); font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
@@ -52,7 +54,29 @@
     
     
     /* Expanded body */
-    .topbar-body{ padding:12px 20px 16px; }
+        .topbar-body{ padding:12px 20px 16px; display:flex; flex-direction:column; gap:16px; }
+
+    .tablist{ display:flex; flex-wrap:wrap; gap:8px; }
+    .tab-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:6px 14px;
+      border-radius:999px;
+      font-weight:600;
+      cursor:pointer;
+      transition:all .2s ease;
+    }
+    .tab-btn[aria-selected="true"], .tab-btn.active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+      box-shadow:0 6px 16px rgba(37,99,235,0.18);
+    }
+    .tab-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+    .view-controls{ display:flex; flex-direction:column; gap:12px; }
+    .view-controls.hidden{ display:none; }
+    .view-hint{ margin:0; font-size:var(--small); color:var(--muted); }
     
     /* Chip area: already non-scrolling; keep your existing rule */
     .filters .chips{ max-height:none; overflow:visible; }
@@ -66,7 +90,7 @@
     h1{ margin:0 0 6px; font-size:20px; }
     .muted{ color:var(--muted); font-size:var(--small); }
 
-    .filters{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:10px;}
+    .filters{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
     .filters .chips{
       display:flex; flex-wrap:wrap; gap:8px;
       /* no internal scrolling */
@@ -82,7 +106,7 @@
     .legend .swatch{ width:12px; height:12px; display:inline-block; border-radius:3px; margin-right:6px; vertical-align:middle; }
     .legend .dashed{ width:16px; height:0; border-top:2px dashed var(--uncertain); display:inline-block; margin-right:6px; }
 
-    main.timeline{ padding:16px 20px 40px; }
+    .timeline{ padding:16px 20px 40px; }
     section.day{ background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); margin:16px auto; padding:0; }
     .date-header{ position:sticky; top:calc(var(--sticky-top) + 54px); background:#fff; border-bottom:1px solid var(--line); padding:10px 14px; z-index:5; display:flex; justify-content:space-between; align-items:center; }
     .date-header h2{ margin:0; font-size:16px; }
@@ -140,7 +164,71 @@
     }
            
 
+
     .hidden{ display:none !important; }
+
+    .view-panel.hidden{ display:none; }
+
+    /* Horizontale weergave */
+    .horizontal-view{ display:flex; flex-direction:column; gap:12px; padding:16px 20px 40px; }
+    .horizontal-view .horizontal-hint{ margin:0 0 8px; font-size:var(--small); color:var(--muted); }
+    .hv-axis-wrap{ position:sticky; top:calc(var(--sticky-top) + 54px); z-index:20; background:linear-gradient(180deg, #ffffff 0%, #ffffffdd 100%); border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
+    .hv-axis{ display:flex; min-height:48px; position:relative; font-size:12px; font-weight:600; color:#0f172a; will-change:transform; }
+    .hv-axis .axis-day{ flex:0 0 auto; border-right:1px solid var(--line); padding:10px 12px; min-width:140px; }
+    .hv-axis .axis-day:last-child{ border-right:none; }
+    .hv-axis .axis-day .axis-label{ display:block; }
+    .hv-axis .axis-day .axis-range{ display:block; color:var(--muted); font-size:11px; margin-top:4px; }
+
+    .hv-body{ border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:var(--shadow); overflow:auto; position:relative; }
+    .hv-body::-webkit-scrollbar{ height:10px; }
+    .hv-body::-webkit-scrollbar-thumb{ background:#cbd5f5; border-radius:999px; }
+    .hv-body::-webkit-scrollbar-track{ background:transparent; }
+    .hv-lanes{ display:flex; flex-direction:column; gap:12px; padding:16px; min-width:100%; }
+
+    .entity-lane{ border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:var(--shadow); }
+    .entity-lane.dragging{ opacity:0.6; }
+    .lane-header{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); cursor:pointer; }
+    .lane-toggle{ flex:1; background:none; border:none; padding:0; display:flex; align-items:center; justify-content:space-between; gap:12px; font:inherit; text-align:left; cursor:pointer; }
+    .lane-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+    .lane-title-wrap{ display:flex; align-items:center; gap:10px; }
+    .lane-color{ width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 2px rgba(37,99,235,0.12); background:var(--lane-color,#2563eb); }
+    .lane-name{ font-weight:600; }
+    .lane-meta{ font-size:12px; color:var(--muted); }
+    .lane-drag-handle{ width:20px; height:20px; border-radius:6px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted); cursor:grab; }
+    .entity-lane.collapsed .lane-body{ display:none; }
+    .entity-lane.collapsed .lane-toggle{ opacity:0.75; }
+
+    .lane-body{ display:flex; flex-direction:column; gap:16px; padding:16px; }
+    .lane-timeline{ position:relative; overflow:hidden; border:1px solid #e5e7eb; border-radius:10px; background:repeating-linear-gradient(to right, rgba(148,163,184,0.12) 0, rgba(148,163,184,0.12) calc(var(--day-width, 1440px) - 1px), rgba(148,163,184,0.24) calc(var(--day-width, 1440px) - 1px), rgba(148,163,184,0.24) var(--day-width, 1440px)); }
+    .lane-timeline-inner{ position:relative; min-height:var(--lane-row-height); }
+    .lane-timeline-inner::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(to right, transparent 0, transparent calc(60px - 1px), rgba(226,232,240,0.35) calc(60px - 1px), rgba(226,232,240,0.35) 60px); pointer-events:none; opacity:0.4; }
+
+    .lane-event{ position:absolute; display:flex; flex-direction:column; gap:6px; padding:10px; background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.45); border-left:4px solid var(--lane-color,#2563eb); border-radius:10px; box-shadow:0 4px 12px rgba(15,23,42,0.08); min-width:48px; color:#0f172a; }
+    .lane-event .time{ font-size:11px; font-weight:600; color:#0f172a; }
+    .lane-event .desc{ font-size:var(--body); white-space:pre-wrap; }
+    .lane-event .entities{ display:flex; flex-wrap:wrap; gap:6px; }
+    .lane-event .entities .entity-pill{ font-size:11px; padding:2px 8px; border-radius:999px; background:var(--lane-pill-bg, rgba(99,102,241,0.15)); border:1px solid currentColor; color:currentColor; }
+    .lane-event.uncertain{ border-style:dashed; border-color:var(--uncertain); border-left-color:var(--uncertain); background:rgba(239,68,68,0.08); }
+    .lane-event.continues-prev::before{ content:"↥"; position:absolute; top:6px; left:6px; font-size:10px; color:var(--muted); }
+    .lane-event.continues-next::after{ content:"↧"; position:absolute; bottom:6px; right:6px; font-size:10px; color:var(--muted); }
+
+    .lane-empty{ font-size:12px; color:var(--muted); padding:4px 0 0 2px; }
+
+    .lane-unknown{ display:flex; flex-direction:column; gap:8px; }
+    .lane-unknown-title{ font-size:12px; font-weight:600; color:#1f2937; }
+    .lane-unknown-list{ display:flex; flex-direction:column; gap:8px; }
+    .lane-unknown-item{ border:1px solid #e5e7eb; border-left:4px solid rgba(37,99,235,0.35); border-radius:10px; padding:10px; background:#f8fafc; display:flex; flex-direction:column; gap:6px; }
+    .lane-unknown-item.uncertain{ border-style:dashed; border-color:var(--uncertain); border-left-color:var(--uncertain); background:rgba(248,250,252,0.6); }
+    .lane-unknown-item .time{ font-size:11px; color:#0f172a; font-weight:600; }
+    .lane-unknown-item .desc{ font-size:var(--body); white-space:pre-wrap; }
+    .lane-unknown-item .entities{ display:flex; flex-wrap:wrap; gap:6px; }
+    .lane-unknown-item .entities .entity-pill{ font-size:11px; padding:2px 8px; border-radius:999px; background:var(--lane-pill-bg, rgba(99,102,241,0.15)); border:1px solid currentColor; color:currentColor; }
+    .lane-unknown-item .badge{ align-self:flex-start; }
+
+    @media (max-width: 768px){
+      .hv-axis .axis-day{ min-width:120px; }
+      .lane-body{ padding:12px; }
+    }
   </style>
 </head>
 <body>
@@ -149,44 +237,72 @@
         <div class="container topbar-row">
           <div class="title-wrap">
             <h1>Tijdlijn</h1>
-            <div class="muted">Per-dag gestapelde weergave met kolommen voor overlappende events. Filter op entiteit hieronder.</div>
-          </div>          
+            <div class="muted">Kies tussen een gestapelde dagweergave of een horizontale entiteitstijdlijn.</div>
+          </div>
         </div>
       </summary>
-    
+
       <div class="container topbar-body">
-        <div class="filters">
-          <div class="actions">
-            <button class="btn" id="selectAll">Selecteer alles</button>
-            <button class="btn" id="clearAll">Wis selectie</button>
-          </div>
-          <div class="chips" id="entityChips" aria-label="Filter op entiteit"></div>
+        <div class="tablist" role="tablist" aria-label="Weergavekeuze">
+          <button class="tab-btn active" role="tab" aria-selected="true" id="tabStacked" data-view-target="stacked">Gestapelde weergave</button>
+          <button class="tab-btn" role="tab" aria-selected="false" id="tabHorizontal" data-view-target="horizontal">Horizontale weergave</button>
         </div>
-    
-        <div class="legend">
-          <span><span class="swatch" style="background:var(--accent); opacity:.3; border:1px solid var(--accent);"></span> Event (met duur)</span>
-          <span><span class="swatch" style="background:#fff; border:2px dotted var(--accent);"></span> Event (alleen starttijd)</span>
-          <span><span class="dashed"></span> Onzeker tijdstip</span>
+
+        <div class="view-controls" id="stackedControls">
+          <div class="filters">
+            <div class="actions">
+              <button class="btn" id="selectAll">Selecteer alles</button>
+              <button class="btn" id="clearAll">Wis selectie</button>
+            </div>
+            <div class="chips" id="entityChips" aria-label="Filter op entiteit"></div>
+          </div>
+
+          <div class="legend">
+            <span><span class="swatch" style="background:var(--accent); opacity:.3; border:1px solid var(--accent);"></span> Event (met duur)</span>
+            <span><span class="swatch" style="background:#fff; border:2px dotted var(--accent);"></span> Event (alleen starttijd)</span>
+            <span><span class="dashed"></span> Onzeker tijdstip</span>
+          </div>
+        </div>
+
+        <div class="view-controls hidden" id="horizontalControls">
+          <p class="view-hint">Sleep entiteitsrijen om de volgorde te veranderen en klik op een naam om in- of uit te klappen. Scroll horizontaal om alle dagen te zien.</p>
         </div>
       </div>
     </details>
 
 
-  <main class="timeline container" id="timelineRoot"></main>
+  <main id="viewMain">
+    <section class="view-panel" id="stackedView" role="tabpanel" aria-labelledby="tabStacked">
+      <div class="timeline container" id="timelineRoot"></div>
+    </section>
 
-  <section class="container undated" id="undatedSection">
-    <h2>Overige gebeurtenissen zonder datum/tijd</h2>
-    <table class="table" id="undatedTable">
-      <thead><tr><th>Gebeurtenis</th><th>Entiteiten</th><th>Zekerheid</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
+    <section class="view-panel hidden container horizontal-view" id="horizontalView" role="tabpanel" aria-labelledby="tabHorizontal">
+      <p class="horizontal-hint" id="horizontalHint">Sleep rijen om de volgorde aan te passen. Klik op een entiteit om in of uit te klappen en scroll horizontaal voor alle dagen.</p>
+      <div class="hv-axis-wrap">
+        <div class="hv-axis" id="horizontalAxis"></div>
+      </div>
+      <div class="hv-body" id="horizontalBody">
+        <div class="hv-lanes" id="horizontalLanes"></div>
+      </div>
+    </section>
+
+    <section class="container undated" id="undatedSection">
+      <h2>Overige gebeurtenissen zonder datum/tijd</h2>
+      <table class="table" id="undatedTable">
+        <thead><tr><th>Gebeurtenis</th><th>Entiteiten</th><th>Zekerheid</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
 
   <script>
     // ------------------ DATA ------------------
     const DATA = {"timed": [{"master_id": 1, "seg_id": "1-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 600.0, "end_m": 660.0, "has_duration": true, "start_label": "10:00", "end_label": "11:00", "desc": "Gebeurtenis 1", "entities": ["org A"], "entity_slugs": ["org-a"], "certain": true, "row_order": 0, "continues_next": false, "continues_prev": false}, {"master_id": 2, "seg_id": "2-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 630.0, "end_m": NaN, "has_duration": true, "start_label": "10:30", "end_label": null, "desc": "Event 2", "entities": ["org A"], "entity_slugs": ["org-a"], "certain": false, "row_order": 1, "continues_next": false, "continues_prev": false}, {"master_id": 3, "seg_id": "3-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 720.0, "end_m": NaN, "has_duration": true, "start_label": "12:00", "end_label": null, "desc": "Event 3", "entities": ["org B"], "entity_slugs": ["org-b"], "certain": true, "row_order": 2, "continues_next": false, "continues_prev": false}, {"master_id": 4, "seg_id": "4-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 734.0, "end_m": 863.0, "has_duration": true, "start_label": "12:14", "end_label": "14:23", "desc": "E4", "entities": ["org C"], "entity_slugs": ["org-c"], "certain": true, "row_order": 3, "continues_next": false, "continues_prev": false}, {"master_id": 5, "seg_id": "5-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 735.0, "end_m": 739.0, "has_duration": true, "start_label": "12:15", "end_label": "12:19", "desc": "E5", "entities": ["org C"], "entity_slugs": ["org-c"], "certain": true, "row_order": 4, "continues_next": false, "continues_prev": false}, {"master_id": 6, "seg_id": "6-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 737.0, "end_m": NaN, "has_duration": true, "start_label": "12:17", "end_label": null, "desc": "E6", "entities": ["org A"], "entity_slugs": ["org-a"], "certain": true, "row_order": 5, "continues_next": false, "continues_prev": false}, {"master_id": 7, "seg_id": "7-s", "date": "2025-01-01", "date_display": "01-01-2025", "start_m": 840.0, "end_m": NaN, "has_duration": true, "start_label": "14:00", "end_label": null, "desc": "E7", "entities": ["org B"], "entity_slugs": ["org-b"], "certain": true, "row_order": 6, "continues_next": false, "continues_prev": false}, {"master_id": 8, "seg_id": "8-s", "date": "2025-02-01", "date_display": "01-02-2025", "start_m": 737.0, "end_m": NaN, "has_duration": true, "start_label": "12:17", "end_label": null, "desc": "E7", "entities": ["org B"], "entity_slugs": ["org-b"], "certain": true, "row_order": 7, "continues_next": false, "continues_prev": false}, {"master_id": 9, "seg_id": "9-s", "date": "2025-02-01", "date_display": "01-02-2025", "start_m": NaN, "end_m": NaN, "has_duration": true, "start_label": null, "end_label": null, "desc": "E7", "entities": ["org B"], "entity_slugs": ["org-b"], "certain": true, "row_order": 8, "continues_next": false, "continues_prev": false}], "date_only": [], "undated": []};
     const MIN_EVENT_MIN = 15; // gebruikt om 'punt'events een minimale duur te geven
     const ALL_ENTITIES = ["org B", "org A", "org C"];
+    const HORIZONTAL_PX_PER_MIN = 1; // px per minuut in horizontale weergave
+    const MINUTES_PER_DAY = 24 * 60;
+    const DAY_MS = 24 * 60 * 60 * 1000;    
 
     // ------------------ UTIL ------------------
     const slugify = (t) => (t||"").toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-._~]/g,'');
@@ -666,6 +782,554 @@
     });
 
     applyFilter();
+    // ------------------ HORIZONTAL VIEW ------------------
+    const stackedControls = document.getElementById('stackedControls');
+    const horizontalControls = document.getElementById('horizontalControls');
+    const stackedView = document.getElementById('stackedView');
+    const horizontalView = document.getElementById('horizontalView');
+    const horizontalAxis = document.getElementById('horizontalAxis');
+    const horizontalBody = document.getElementById('horizontalBody');
+    const horizontalLanes = document.getElementById('horizontalLanes');
+    const tabButtons = document.querySelectorAll('[data-view-target]');
+
+    const ENTITY_NAME_BY_SLUG = new Map();
+    for(const name of ALL_ENTITIES){
+      ENTITY_NAME_BY_SLUG.set(slugify(name), name);
+    }
+
+    function parseISODateUtc(iso){
+      if(!iso || typeof iso !== 'string') return NaN;
+      const parts = iso.split('-');
+      if(parts.length !== 3) return NaN;
+      const y = Number(parts[0]);
+      const m = Number(parts[1]);
+      const d = Number(parts[2]);
+      if(!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return NaN;
+      return Date.UTC(y, m-1, d);
+    }
+
+    function isoFromMs(ms){
+      const dt = new Date(ms);
+      const y = dt.getUTCFullYear();
+      const m = String(dt.getUTCMonth()+1).padStart(2,'0');
+      const d = String(dt.getUTCDate()).padStart(2,'0');
+      return `${y}-${m}-${d}`;
+    }
+
+    const DAY_NAMES = ['zo','ma','di','wo','do','vr','za'];
+    function formatAxisLabel(iso, fallbackMs){
+      const ms = fallbackMs ?? parseISODateUtc(iso);
+      const sample = (byDateTimed.get(iso) && byDateTimed.get(iso)[0]) || (byDateNoTime.get(iso) && byDateNoTime.get(iso)[0]);
+      let base = sample?.date_display || null;
+      if(!base){
+        if(!Number.isFinite(ms)) return iso || '';
+        const dt = new Date(ms);
+        const dd = String(dt.getUTCDate()).padStart(2,'0');
+        const mm = String(dt.getUTCMonth()+1).padStart(2,'0');
+        const yy = dt.getUTCFullYear();
+        base = `${dd}-${mm}-${yy}`;
+      }
+      const dt = Number.isFinite(ms) ? new Date(ms) : null;
+      const dow = dt ? DAY_NAMES[dt.getUTCDay()] : '';
+      return dow ? `${dow} ${base}` : base;
+    }
+
+    function safeStorage(key, value){
+      try {
+        if(value === undefined){
+          const raw = localStorage.getItem(key);
+          if(!raw) return null;
+          return JSON.parse(raw);
+        }
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch(err){ return null; }
+    }
+
+    const STORAGE_KEYS = {
+      order: 'timeline-horizontal-order',
+      collapsed: 'timeline-horizontal-collapsed'
+    };
+
+    const NO_ENTITY_SLUG = '__no-entity__';
+    const NO_ENTITY_LABEL = 'Zonder entiteit';
+
+    function ensureColorForSlug(slug){
+      if(ENTITY_COLORS.has(slug)) return ENTITY_COLORS.get(slug);
+      const fallback = '#4b5563';
+      const info = { color: fallback, pillBg: hexToRgba(fallback, 0.15) };
+      ENTITY_COLORS.set(slug, info);
+      return info;
+    }
+
+    function computeHorizontalMeta(){
+      const datedEvents = [];
+      for(const ev of DATA.timed){ if(ev?.date) datedEvents.push(ev.date); }
+      for(const ev of DATA.date_only){ if(ev?.date) datedEvents.push(ev.date); }
+      if(!datedEvents.length) return null;
+      const msValues = datedEvents.map(parseISODateUtc).filter(Number.isFinite);
+      if(!msValues.length) return null;
+      const minMs = Math.min(...msValues);
+      const maxMs = Math.max(...msValues);
+      const days = Math.max(1, Math.round((maxMs - minMs)/DAY_MS) + 1);
+      const dayWidth = MINUTES_PER_DAY * HORIZONTAL_PX_PER_MIN;
+      return {
+        minMs,
+        maxMs,
+        totalDays: days,
+        pxPerMin: HORIZONTAL_PX_PER_MIN,
+        dayWidth,
+        timelineWidth: dayWidth * days
+      };
+    }
+
+    function prepareEntityRecords(){
+      const records = new Map();
+      const orderBase = [];
+      for(const name of ALL_ENTITIES){
+        const slug = slugify(name);
+        ENTITY_NAME_BY_SLUG.set(slug, name);
+        ensureColorForSlug(slug);
+        records.set(slug, { slug, name, timed: [], unknown: [] });
+        orderBase.push(slug);
+      }
+
+      const addToRecord = (slug, name, bucket, ev, source) => {
+        if(!records.has(slug)){
+          const label = name || ENTITY_NAME_BY_SLUG.get(slug) || slug;
+          ensureColorForSlug(slug);
+          records.set(slug, { slug, name: label, timed: [], unknown: [] });
+          orderBase.push(slug);
+        }
+        const rec = records.get(slug);
+        if(name && !rec.name) rec.name = name;
+        rec[bucket].push({ event: ev, source });
+      };
+
+      for(const ev of DATA.timed){
+        const slugs = (ev.entity_slugs && ev.entity_slugs.length) ? ev.entity_slugs : [NO_ENTITY_SLUG];
+        const names = Array.isArray(ev.entities) ? ev.entities : [];
+        const targetBucket = isUnknownTime(ev) ? 'unknown' : 'timed';
+        slugs.forEach((slug, idx)=>{
+          const nm = names[idx] || ENTITY_NAME_BY_SLUG.get(slug) || (slug===NO_ENTITY_SLUG ? NO_ENTITY_LABEL : slug);
+          addToRecord(slug, nm, targetBucket, ev, 'timed');
+        });
+      }
+
+      for(const ev of DATA.date_only){
+        const slugs = (ev.entity_slugs && ev.entity_slugs.length) ? ev.entity_slugs : [NO_ENTITY_SLUG];
+        const names = Array.isArray(ev.entities) ? ev.entities : [];
+        slugs.forEach((slug, idx)=>{
+          const nm = names[idx] || ENTITY_NAME_BY_SLUG.get(slug) || (slug===NO_ENTITY_SLUG ? NO_ENTITY_LABEL : slug);
+          addToRecord(slug, nm, 'unknown', ev, 'date_only');
+        });
+      }
+
+      if(records.has(NO_ENTITY_SLUG)){
+        ENTITY_NAME_BY_SLUG.set(NO_ENTITY_SLUG, NO_ENTITY_LABEL);
+        ensureColorForSlug(NO_ENTITY_SLUG);
+        if(!orderBase.includes(NO_ENTITY_SLUG)) orderBase.push(NO_ENTITY_SLUG);
+      }
+      return { records, orderBase };
+    }
+
+    function mergeOrders(saved, defaults){
+      const result = [];
+      const seen = new Set();
+      if(Array.isArray(saved)){
+        for(const slug of saved){
+          if(defaults.includes(slug) && !seen.has(slug)){
+            result.push(slug);
+            seen.add(slug);
+          }
+        }
+      }
+      for(const slug of defaults){
+        if(!seen.has(slug)){
+          result.push(slug);
+          seen.add(slug);
+        }
+      }
+      return result;
+    }
+
+    function buildLaneEvents(rec, meta){
+      const items = [];
+      for(const entry of rec.timed){
+        const ev = entry.event;
+        const dayMs = parseISODateUtc(ev.date);
+        if(!Number.isFinite(dayMs)) continue;
+        const dayIndex = Math.round((dayMs - meta.minMs) / DAY_MS);
+        const startLocal = asMinutes(ev.start_m);
+        const endLocal = asMinutes(ev.end_m);
+        let start = startLocal;
+        if(!Number.isFinite(start)){
+          if(Number.isFinite(endLocal)) start = Math.max(0, endLocal - MIN_EVENT_MIN);
+          else start = 0;
+        }
+        let end = endLocal;
+        if(!Number.isFinite(end) || end <= start){
+          end = start + MIN_EVENT_MIN;
+        }
+        const absStart = dayIndex * MINUTES_PER_DAY + start;
+        const absEnd = dayIndex * MINUTES_PER_DAY + end;
+        items.push({
+          event: ev,
+          absStart,
+          absEnd,
+          startLocal: start,
+          endLocal: end,
+          dayIndex,
+          order: ev.row_order ?? 0
+        });
+      }
+      items.sort((a,b)=> (a.absStart - b.absStart) || (a.order - b.order));
+      const laneEnd = [];
+      let lanes = 0;
+      for(const item of items){
+        let placed = false;
+        for(let i=0;i<laneEnd.length;i++){
+          if(item.absStart >= laneEnd[i]){
+            item.lane = i;
+            laneEnd[i] = item.absEnd;
+            placed = true;
+            break;
+          }
+        }
+        if(!placed){
+          item.lane = laneEnd.length;
+          laneEnd.push(item.absEnd);
+        }
+        lanes = Math.max(lanes, item.lane + 1);
+      }
+      return { items, laneCount: Math.max(1, lanes) };
+    }
+
+    function describeTimeRange(item){
+      const startLabel = item.event.start_label || (Number.isFinite(item.startLocal) ? formatTime(item.startLocal) : '—');
+      const endLabel = item.event.end_label || (Number.isFinite(item.endLocal) ? formatTime(item.endLocal) : null);
+      return endLabel ? `${startLabel} – ${endLabel}` : startLabel;
+    }
+
+    function renderUnknownList(rec){
+      if(!rec.unknown.length) return null;
+      const wrap = document.createElement('div');
+      wrap.className = 'lane-unknown';
+      const title = document.createElement('div');
+      title.className = 'lane-unknown-title';
+      title.textContent = 'Tijd onbekend';
+      wrap.appendChild(title);
+      const list = document.createElement('div');
+      list.className = 'lane-unknown-list';
+      for(const entry of rec.unknown){
+        const ev = entry.event;
+        const item = document.createElement('div');
+        item.className = 'lane-unknown-item' + (ev.certain===false ? ' uncertain' : '');
+        const time = document.createElement('div');
+        time.className = 'time';
+        const labelParts = [];
+        if(ev.date_display) labelParts.push(ev.date_display);
+        else if(ev.date) labelParts.push(formatAxisLabel(ev.date));
+        if(ev.start_label) labelParts.push(ev.start_label);
+        if(ev.end_label) labelParts.push('– ' + ev.end_label);
+        time.textContent = labelParts.join(' · ');
+        if(labelParts.length) item.appendChild(time);
+        const desc = document.createElement('div');
+        desc.className = 'desc';
+        desc.textContent = ev.desc || '';
+        item.appendChild(desc);
+        if(ev.entities && ev.entities.length){
+          const ents = document.createElement('div');
+          ents.className = 'entities';
+          for(const name of ev.entities){
+            const pill = document.createElement('span');
+            pill.className = 'entity-pill';
+            const slug = slugify(name);
+            const color = ensureColorForSlug(slug);
+            pill.style.color = color.color;
+            pill.style.borderColor = color.color;
+            pill.style.background = color.pillBg;
+            pill.textContent = name;
+            ents.appendChild(pill);
+          }
+          item.appendChild(ents);
+        }
+        if(ev.certain===false){
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = 'Onzeker';
+          item.appendChild(badge);
+        }
+        list.appendChild(item);
+      }
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function buildLaneElement(rec, meta){
+      const color = ensureColorForSlug(rec.slug);
+      const lane = document.createElement('div');
+      lane.className = 'entity-lane';
+      lane.dataset.entity = rec.slug;
+      lane.style.setProperty('--lane-color', color.color);
+      lane.style.setProperty('--lane-pill-bg', color.pillBg);
+
+      const header = document.createElement('div');
+      header.className = 'lane-header';
+
+      const dragHandle = document.createElement('span');
+      dragHandle.className = 'lane-drag-handle';
+      dragHandle.textContent = '☰';
+      dragHandle.setAttribute('aria-hidden','true');
+      dragHandle.draggable = true;
+      dragHandle.title = 'Sleep om de volgorde te wijzigen';
+      header.appendChild(dragHandle);
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'lane-toggle';
+      toggle.setAttribute('aria-expanded','true');
+
+      const titleWrap = document.createElement('span');
+      titleWrap.className = 'lane-title-wrap';
+      const swatch = document.createElement('span');
+      swatch.className = 'lane-color';
+      swatch.style.background = color.color;
+      titleWrap.appendChild(swatch);
+      const title = document.createElement('span');
+      title.className = 'lane-name';
+      title.textContent = rec.name || ENTITY_NAME_BY_SLUG.get(rec.slug) || rec.slug;
+      titleWrap.appendChild(title);
+      toggle.appendChild(titleWrap);
+
+      const totalEvents = rec.timed.length + rec.unknown.length;
+      const metaInfo = document.createElement('span');
+      metaInfo.className = 'lane-meta';
+      metaInfo.textContent = totalEvents ? `${totalEvents} gebeurtenis${totalEvents>1?'sen':''}` : 'Geen gebeurtenissen';
+      toggle.appendChild(metaInfo);
+
+      header.appendChild(toggle);
+      lane.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'lane-body';
+
+      const timeline = document.createElement('div');
+      timeline.className = 'lane-timeline';
+      timeline.style.setProperty('--day-width', `${meta.dayWidth}px`);
+      const inner = document.createElement('div');
+      inner.className = 'lane-timeline-inner';
+      inner.style.width = `${meta.timelineWidth}px`;
+
+      const { items, laneCount } = buildLaneEvents(rec, meta);
+      inner.style.height = `calc(${laneCount} * var(--lane-row-height))`;
+
+      for(const item of items){
+        const ev = item.event;
+        const card = document.createElement('article');
+        card.className = 'lane-event';
+        card.style.left = `${item.absStart * meta.pxPerMin}px`;
+        const width = Math.max((item.absEnd - item.absStart) * meta.pxPerMin, MIN_EVENT_MIN * meta.pxPerMin * 0.5);
+        card.style.width = `${width}px`;
+        card.style.top = `calc(${item.lane} * var(--lane-row-height))`;
+        card.style.setProperty('--lane-color', color.color);
+        card.style.setProperty('--lane-pill-bg', color.pillBg);
+        if(ev.certain===false) card.classList.add('uncertain');
+        if(ev.continues_prev) card.classList.add('continues-prev');
+        if(ev.continues_next) card.classList.add('continues-next');
+
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'time';
+        const iso = ev.date || isoFromMs(meta.minMs + item.dayIndex*DAY_MS);
+        const label = formatAxisLabel(iso, meta.minMs + item.dayIndex*DAY_MS);
+        const range = describeTimeRange(item);
+        timeDiv.textContent = `${label} · ${range}`;
+        card.appendChild(timeDiv);
+
+        const desc = document.createElement('div');
+        desc.className = 'desc';
+        desc.textContent = ev.desc || '';
+        card.appendChild(desc);
+
+        if(ev.entities && ev.entities.length){
+          const other = ev.entities.filter(name => slugify(name) !== rec.slug);
+          if(other.length){
+            const ents = document.createElement('div');
+            ents.className = 'entities';
+            for(const name of other){
+              const pill = document.createElement('span');
+              pill.className = 'entity-pill';
+              const colorInfo = ensureColorForSlug(slugify(name));
+              pill.style.color = colorInfo.color;
+              pill.style.borderColor = colorInfo.color;
+              pill.style.background = colorInfo.pillBg;
+              pill.textContent = name;
+              ents.appendChild(pill);
+            }
+            card.appendChild(ents);
+          }
+        }
+
+        card.title = `${label}\n${range}${ev.entities && ev.entities.length ? `\nEntiteiten: ${ev.entities.join(', ')}` : ''}`;
+        inner.appendChild(card);
+      }
+
+      timeline.appendChild(inner);
+      body.appendChild(timeline);
+
+      if(!items.length){
+        const empty = document.createElement('div');
+        empty.className = 'lane-empty';
+        empty.textContent = 'Geen gebeurtenissen met tijd binnen dit bereik.';
+        body.appendChild(empty);
+      }
+
+      const unknown = renderUnknownList(rec);
+      if(unknown) body.appendChild(unknown);
+
+      lane.appendChild(body);
+
+      toggle.addEventListener('click', ()=>{
+        const collapsed = lane.classList.toggle('collapsed');
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        const stored = safeStorage(STORAGE_KEYS.collapsed) || [];
+        const set = new Set(stored);
+        if(collapsed) set.add(rec.slug);
+        else set.delete(rec.slug);
+        safeStorage(STORAGE_KEYS.collapsed, Array.from(set));
+      });
+
+      return lane;
+    }
+
+    function renderAxis(meta){
+      horizontalAxis.innerHTML = '';
+      horizontalAxis.style.width = `${meta.timelineWidth}px`;
+      for(let i=0; i<meta.totalDays; i++){
+        const dayMs = meta.minMs + i * DAY_MS;
+        const iso = isoFromMs(dayMs);
+        const day = document.createElement('div');
+        day.className = 'axis-day';
+        day.style.width = `${meta.dayWidth}px`;
+        const label = document.createElement('span');
+        label.className = 'axis-label';
+        label.textContent = formatAxisLabel(iso, dayMs);
+        day.appendChild(label);
+        const range = document.createElement('span');
+        range.className = 'axis-range';
+        range.textContent = '00:00 – 24:00';
+        day.appendChild(range);
+        horizontalAxis.appendChild(day);
+      }
+      horizontalAxis.style.transform = 'translateX(0px)';
+    }
+
+    function renderHorizontalTimeline(){
+      const meta = computeHorizontalMeta();
+      if(!meta){
+        horizontalAxis.innerHTML = '<div class="axis-day"><span class="axis-label">Geen data beschikbaar</span></div>';
+        horizontalLanes.innerHTML = '';
+        return;
+      }
+
+      renderAxis(meta);
+      horizontalBody.scrollLeft = 0;
+
+      const { records, orderBase } = prepareEntityRecords();
+      const savedOrder = safeStorage(STORAGE_KEYS.order) || [];
+      const savedCollapsed = safeStorage(STORAGE_KEYS.collapsed) || [];
+      const order = mergeOrders(savedOrder, Array.from(records.keys()).filter(slug => {
+        if(orderBase.includes(slug)) return true;
+        return records.get(slug)?.timed.length || records.get(slug)?.unknown.length;
+      }));
+
+      horizontalLanes.innerHTML = '';
+      for(const slug of order){
+        if(!records.has(slug)) continue;
+        const rec = records.get(slug);
+        const lane = buildLaneElement(rec, meta);
+        if(Array.isArray(savedCollapsed) && savedCollapsed.includes(slug)){
+          lane.classList.add('collapsed');
+          const toggle = lane.querySelector('.lane-toggle');
+          if(toggle) toggle.setAttribute('aria-expanded','false');
+        }
+        horizontalLanes.appendChild(lane);
+      }
+
+      attachLaneDragAndDrop();
+      syncAxisScroll();
+    }
+
+    function attachLaneDragAndDrop(){
+      const lanes = horizontalLanes.querySelectorAll('.entity-lane');
+      let dragging = null;
+      lanes.forEach(lane =>{
+        const handle = lane.querySelector('.lane-drag-handle');
+        if(handle){
+          handle.addEventListener('dragstart', ev =>{
+            dragging = lane;
+            lane.classList.add('dragging');
+            ev.dataTransfer.effectAllowed = 'move';
+            ev.dataTransfer.setData('text/plain', lane.dataset.entity);
+            try{ ev.dataTransfer.setDragImage(lane, lane.offsetWidth/2, 12); }catch(err){}
+          });
+          handle.addEventListener('dragend', ()=>{
+            if(dragging) dragging.classList.remove('dragging');
+            dragging = null;
+            persistLaneOrder();
+          });
+        }
+        lane.addEventListener('dragover', ev =>{
+          ev.preventDefault();
+          if(!dragging || lane === dragging) return;
+          const rect = lane.getBoundingClientRect();
+          const after = (ev.clientY - rect.top) > rect.height / 2;
+          const parent = lane.parentElement;
+          if(after) parent.insertBefore(dragging, lane.nextSibling);
+          else parent.insertBefore(dragging, lane);
+        });
+      });
+    }
+
+    function persistLaneOrder(){
+      const order = Array.from(horizontalLanes.children).map(el => el.dataset.entity);
+      safeStorage(STORAGE_KEYS.order, order);
+    }
+
+    let scrollSynced = false;
+    function syncAxisScroll(){
+      if(scrollSynced) return;
+      scrollSynced = true;
+      horizontalBody.addEventListener('scroll', ()=>{
+        const offset = horizontalBody.scrollLeft;
+        horizontalAxis.style.transform = `translateX(-${offset}px)`;
+      });
+    }
+
+    let horizontalReady = false;
+    function showView(name){
+      const isHorizontal = name === 'horizontal';
+      stackedView.classList.toggle('hidden', isHorizontal);
+      horizontalView.classList.toggle('hidden', !isHorizontal);
+      stackedControls.classList.toggle('hidden', isHorizontal);
+      horizontalControls.classList.toggle('hidden', !isHorizontal);
+      tabButtons.forEach(btn =>{
+        const active = btn.dataset.viewTarget === name;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      if(isHorizontal && !horizontalReady){
+        renderHorizontalTimeline();
+        horizontalReady = true;
+      }
+    }
+
+    tabButtons.forEach(btn =>{
+      btn.addEventListener('click', ()=>{
+        showView(btn.dataset.viewTarget);
+      });
+    });
+
+    showView('stacked');
   </script>
 </body>
 </html>
