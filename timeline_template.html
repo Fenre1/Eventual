@@ -175,10 +175,10 @@
     .horizontal-view .horizontal-hint{ margin:0 0 8px; font-size:var(--small); color:var(--muted); }
     .hv-axis-wrap{ position:sticky; top:calc(var(--sticky-top) + 54px); z-index:20; background:linear-gradient(180deg, #ffffff 0%, #ffffffdd 100%); border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
     .hv-axis{ display:flex; min-height:48px; position:relative; font-size:12px; font-weight:600; color:#0f172a; will-change:transform; }
-    .hv-axis .axis-day{ flex:0 0 auto; border-right:1px solid var(--line); padding:10px 12px; min-width:140px; }
+    .hv-axis .axis-day{ flex:0 0 auto; border-right:1px solid var(--line); padding:10px 12px; min-width:0; display:flex; flex-direction:column; gap:4px; align-items:flex-start; }
     .hv-axis .axis-day:last-child{ border-right:none; }
-    .hv-axis .axis-day .axis-label{ display:block; }
-    .hv-axis .axis-day .axis-range{ display:block; color:var(--muted); font-size:11px; margin-top:4px; }
+    .hv-axis .axis-day .axis-label{ display:block; word-break:break-word; white-space:normal; }
+    .hv-axis .axis-day .axis-range{ display:block; color:var(--muted); font-size:11px; margin-top:0; }
 
     .hv-body{ border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:var(--shadow); overflow:auto; position:relative; }
     .hv-body::-webkit-scrollbar{ height:10px; }
@@ -200,11 +200,16 @@
     .entity-lane.collapsed .lane-toggle{ opacity:0.75; }
 
     .lane-body{ display:flex; flex-direction:column; gap:16px; padding:16px; }
-    .lane-timeline{ position:relative; overflow:hidden; border:1px solid #e5e7eb; border-radius:10px; background:repeating-linear-gradient(to right, rgba(148,163,184,0.12) 0, rgba(148,163,184,0.12) calc(var(--day-width, 1440px) - 1px), rgba(148,163,184,0.24) calc(var(--day-width, 1440px) - 1px), rgba(148,163,184,0.24) var(--day-width, 1440px)); }
+    .lane-timeline{ position:relative; overflow:hidden; border:1px solid #e5e7eb; border-radius:10px; background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%); }
     .lane-timeline-inner{ position:relative; min-height:var(--lane-row-height); }
-    .lane-timeline-inner::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(to right, transparent 0, transparent calc(60px - 1px), rgba(226,232,240,0.35) calc(60px - 1px), rgba(226,232,240,0.35) 60px); pointer-events:none; opacity:0.4; }
+    .lane-guides{ position:absolute; inset:0; pointer-events:none; z-index:0; }
+    .lane-guides .guide{ position:absolute; top:0; bottom:0; border-left:1px solid rgba(148,163,184,0.4); }
+    .lane-guides .guide.day{ border-color:rgba(148,163,184,0.55); }
+    .lane-guides .guide.quarter{ border-color:rgba(191,219,254,0.6); }
+    .lane-guides .guide.hour{ border-color:rgba(226,232,240,0.6); opacity:0.65; }
+    .lane-guides .guide.inactive{ opacity:0.35; }
 
-    .lane-event{ position:absolute; display:flex; flex-direction:column; gap:6px; padding:10px; background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.45); border-left:4px solid var(--lane-color,#2563eb); border-radius:10px; box-shadow:0 4px 12px rgba(15,23,42,0.08); min-width:var(--lane-event-min-width,120px); color:#0f172a; }
+    .lane-event{ position:absolute; display:flex; flex-direction:column; gap:6px; padding:10px; background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.45); border-left:4px solid var(--lane-color,#2563eb); border-radius:10px; box-shadow:0 4px 12px rgba(15,23,42,0.08); min-width:var(--lane-event-min-width,120px); color:#0f172a; z-index:1; }
     .lane-event .time{ font-size:11px; font-weight:600; color:#0f172a; }
     .lane-event .desc{ font-size:var(--body); white-space:pre-wrap; }
     .lane-event .entities{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -278,7 +283,7 @@
     </section>
 
     <section class="view-panel hidden container horizontal-view" id="horizontalView" role="tabpanel" aria-labelledby="tabHorizontal">
-      <p class="horizontal-hint" id="horizontalHint">Sleep rijen om de volgorde aan te passen. Klik op een entiteit om in of uit te klappen en scroll horizontaal voor alle dagen.</p>
+      <p class="horizontal-hint" id="horizontalHint">Sleep rijen om de volgorde aan te passen. Klik op een entiteit om in of uit te klappen en scroll horizontaal voor alle dagen. Lege dagen en uren worden automatisch compacter weergegeven.</p>
       <div class="hv-axis-wrap">
         <div class="hv-axis" id="horizontalAxis"></div>
       </div>
@@ -301,7 +306,14 @@
     const DATA = %%DATA%%;
     const MIN_EVENT_MIN = %%MIN_EVENT_MIN%%; // gebruikt om 'punt'events een minimale duur te geven
     const ALL_ENTITIES = %%ALL_ENTITIES_JSON%%;
-    const HORIZONTAL_PX_PER_MIN = 1; // px per minuut in horizontale weergave
+    const HORIZONTAL_PX_PER_MIN = 1; // baseline px per minuut voor actieve uren
+    const HORIZONTAL_GAP_PX_PER_MIN = 0.1; // px per minuut voor lege intervallen
+    const HORIZONTAL_EMPTY_DAY_MIN_WIDTH = 56;
+    const HORIZONTAL_EMPTY_QUARTER_MIN_WIDTH = 24;
+    const HORIZONTAL_EMPTY_HOUR_MIN_WIDTH = 14;
+    const HORIZONTAL_ACTIVE_HOUR_MIN_WIDTH = 56;
+    const QUARTER_MINUTES = 6 * 60;
+    const HOUR_MINUTES = 60;
     const MINUTES_PER_DAY = 24 * 60;
     const DAY_MS = 24 * 60 * 60 * 1000;
     const MIN_LANE_EVENT_WIDTH = 120; // minimale breedte (in pixels) voor events in de horizontale weergave
@@ -864,26 +876,191 @@
       return info;
     }
 
+    function computeEventDisplayRange(ev){
+      if(ev && ev.__hRange) return ev.__hRange;
+      const startRaw = asMinutes(ev?.start_m);
+      const endRaw = asMinutes(ev?.end_m);
+      let start = startRaw;
+      if(!Number.isFinite(start)){
+        if(Number.isFinite(endRaw)) start = Math.max(0, endRaw - MIN_EVENT_MIN);
+        else start = 0;
+      }
+      start = Math.max(0, start);
+      let displayEnd = endRaw;
+      if(!Number.isFinite(displayEnd) || displayEnd <= start){
+        displayEnd = start + MIN_EVENT_MIN;
+      }
+      let end = Math.min(displayEnd, MINUTES_PER_DAY);
+      if(end <= start) end = start + MIN_EVENT_MIN;
+      const range = { start, end, displayEnd };
+      if(ev) ev.__hRange = range;
+      return range;
+    }
+
+    function buildMinuteToPixelConverter(segments){
+      if(!segments.length){
+        return () => 0;
+      }
+      return function(minute){
+        if(!Number.isFinite(minute)) return 0;
+        if(minute <= segments[0].startMin) return segments[0].offsetPx;
+        for(let i=0;i<segments.length;i++){
+          const seg = segments[i];
+          if(minute <= seg.endMin){
+            const delta = minute - seg.startMin;
+            return seg.offsetPx + delta * seg.pxPerMin;
+          }
+        }
+        const last = segments[segments.length - 1];
+        const delta = minute - last.endMin;
+        return last.offsetPx + last.widthPx + delta * last.pxPerMin;
+      };
+    }
+
     function computeHorizontalMeta(){
-      const datedEvents = [];
-      for(const ev of DATA.timed){ if(ev?.date) datedEvents.push(ev.date); }
-      for(const ev of DATA.date_only){ if(ev?.date) datedEvents.push(ev.date); }
-      if(!datedEvents.length) return null;
-      const msValues = datedEvents.map(parseISODateUtc).filter(Number.isFinite);
+      const isoSet = new Set();
+      for(const key of byDateTimed.keys()){ if(key) isoSet.add(key); }
+      for(const key of byDateNoTime.keys()){ if(key) isoSet.add(key); }
+      if(isoSet.size === 0) return null;
+
+      const msValues = [];
+      for(const iso of isoSet){
+        const ms = parseISODateUtc(iso);
+        if(Number.isFinite(ms)) msValues.push(ms);
+      }
       if(!msValues.length) return null;
-      const minMs = Math.min(...msValues);
-      const maxMs = Math.max(...msValues);
-      const days = Math.max(1, Math.round((maxMs - minMs)/DAY_MS) + 1);
-      const dayWidth = MINUTES_PER_DAY * HORIZONTAL_PX_PER_MIN;
+      msValues.sort((a,b)=>a-b);
+      const minMs = msValues[0];
+      const maxMs = msValues[msValues.length - 1];
+      const totalDays = Math.max(1, Math.round((maxMs - minMs)/DAY_MS) + 1);
+
+      const dayIndexByIso = new Map();
+      const days = [];
+      const segments = [];
+      let pxCursor = 0;
+
+      for(let dayIndex=0; dayIndex<totalDays; dayIndex++){
+        const ms = minMs + dayIndex * DAY_MS;
+        const iso = isoFromMs(ms);
+        dayIndexByIso.set(iso, dayIndex);
+        const timedEvents = (byDateTimed.get(iso) || []).slice();
+        const dateOnlyEvents = (byDateNoTime.get(iso) || []).slice();
+        const rangeEntries = timedEvents.map(ev => ({ event: ev, range: computeEventDisplayRange(ev) }));
+        const hasTimed = rangeEntries.length > 0;
+        const hasDateOnly = dateOnlyEvents.length > 0;
+        const baseMinute = dayIndex * MINUTES_PER_DAY;
+        const daySegments = [];
+        const quarterInfo = [];
+
+        const addSegment = (localStart, localEnd, pxPerMin, minWidthPx, type, quarterIndex) => {
+          const absStart = baseMinute + localStart;
+          const absEnd = baseMinute + localEnd;
+          if(absEnd <= absStart) return;
+          const duration = absEnd - absStart;
+          let width = duration * pxPerMin;
+          if(Number.isFinite(minWidthPx)) width = Math.max(width, minWidthPx);
+          const segment = {
+            startMin: absStart,
+            endMin: absEnd,
+            widthPx: width,
+            pxPerMin: width / duration,
+            offsetPx: pxCursor,
+            dayIndex,
+            dayIso: iso,
+            type,
+            quarter: quarterIndex
+          };
+          pxCursor += width;
+          segments.push(segment);
+          daySegments.push(segment);
+          return segment;
+        };
+
+        if(hasTimed){
+          for(let q=0; q<4; q++){
+            const quarterStart = q * QUARTER_MINUTES;
+            const quarterEnd = quarterStart + QUARTER_MINUTES;
+            const quarterRanges = rangeEntries.filter(entry => {
+              const { start, end } = entry.range;
+              return end > quarterStart && start < quarterEnd;
+            });
+            const quarterHasEvents = quarterRanges.length > 0;
+            quarterInfo.push({ hasEvents: quarterHasEvents });
+            if(quarterHasEvents){
+              for(let h=0; h<6; h++){
+                const hourStart = quarterStart + h * HOUR_MINUTES;
+                const hourEnd = hourStart + HOUR_MINUTES;
+                const hourHasEvents = quarterRanges.some(entry => {
+                  const { start, end } = entry.range;
+                  return end > hourStart && start < hourEnd;
+                });
+                const pxPerMin = hourHasEvents ? HORIZONTAL_PX_PER_MIN : HORIZONTAL_GAP_PX_PER_MIN;
+                const minWidth = hourHasEvents ? HORIZONTAL_ACTIVE_HOUR_MIN_WIDTH : HORIZONTAL_EMPTY_HOUR_MIN_WIDTH;
+                addSegment(hourStart, hourEnd, pxPerMin, minWidth, hourHasEvents ? 'hour-active' : 'hour-empty', q);
+              }
+            } else {
+              addSegment(quarterStart, quarterEnd, HORIZONTAL_GAP_PX_PER_MIN, HORIZONTAL_EMPTY_QUARTER_MIN_WIDTH, 'quarter-empty', q);
+            }
+          }
+        } else {
+          for(let q=0; q<4; q++){ quarterInfo.push({ hasEvents:false }); }
+          const pxPerMin = Math.min(HORIZONTAL_GAP_PX_PER_MIN, HORIZONTAL_EMPTY_DAY_MIN_WIDTH / MINUTES_PER_DAY);
+          addSegment(0, MINUTES_PER_DAY, pxPerMin, HORIZONTAL_EMPTY_DAY_MIN_WIDTH, hasDateOnly ? 'day-dateonly' : 'day-empty', null);
+        }
+
+        const dayWidth = daySegments.reduce((sum, seg) => sum + seg.widthPx, 0);
+        days.push({
+          iso,
+          ms,
+          index: dayIndex,
+          width: dayWidth,
+          hasTimed,
+          hasDateOnly,
+          quarterInfo,
+          timedCount: rangeEntries.length,
+          dateOnlyCount: dateOnlyEvents.length
+        });
+      }
+
+      const minuteToPixel = buildMinuteToPixelConverter(segments);
+      const dayGuidePositions = [];
+      const quarterGuidePositions = [];
+      const hourGuidePositions = [];
+      for(const day of days){
+        const baseMinute = day.index * MINUTES_PER_DAY;
+        dayGuidePositions.push(minuteToPixel(baseMinute));
+        for(let q=1; q<4; q++){
+          const pos = minuteToPixel(baseMinute + q * QUARTER_MINUTES);
+          const active = (day.quarterInfo[q-1]?.hasEvents || day.quarterInfo[q]?.hasEvents);
+          quarterGuidePositions.push({ position: pos, active });
+        }
+        day.quarterInfo.forEach((info, qIdx) => {
+          if(info.hasEvents){
+            for(let h=1; h<6; h++){
+              hourGuidePositions.push(minuteToPixel(baseMinute + qIdx * QUARTER_MINUTES + h * HOUR_MINUTES));
+            }
+          }
+        });
+      }
+      dayGuidePositions.push(minuteToPixel(totalDays * MINUTES_PER_DAY));
+
       return {
         minMs,
         maxMs,
-        totalDays: days,
-        pxPerMin: HORIZONTAL_PX_PER_MIN,
-        dayWidth,
-        timelineWidth: dayWidth * days
+        totalDays,
+        timelineWidth: pxCursor,
+        days,
+        dayIndexByIso,
+        minuteToPixel,
+        guides: {
+          days: dayGuidePositions,
+          quarters: quarterGuidePositions,
+          hours: hourGuidePositions
+        }
       };
     }
+
+
 
     function prepareEntityRecords(){
       const records = new Map();
@@ -957,53 +1134,59 @@
 
     function buildLaneEvents(rec, meta){
       const items = [];
+      const minuteToPx = (meta && typeof meta.minuteToPixel === 'function')
+        ? meta.minuteToPixel
+        : (minute => minute * HORIZONTAL_PX_PER_MIN);
+      const indexLookup = meta?.dayIndexByIso instanceof Map ? meta.dayIndexByIso : null;
       for(const entry of rec.timed){
         const ev = entry.event;
-        const dayMs = parseISODateUtc(ev.date);
-        if(!Number.isFinite(dayMs)) continue;
-        const dayIndex = Math.round((dayMs - meta.minMs) / DAY_MS);
-        const startLocal = asMinutes(ev.start_m);
-        const endLocal = asMinutes(ev.end_m);
-        let start = startLocal;
-        if(!Number.isFinite(start)){
-          if(Number.isFinite(endLocal)) start = Math.max(0, endLocal - MIN_EVENT_MIN);
-          else start = 0;
+        if(!ev?.date) continue;
+        const dayIndex = indexLookup ? indexLookup.get(ev.date) : undefined;
+        if(!Number.isFinite(dayIndex)) continue;
+        const range = computeEventDisplayRange(ev);
+        const startLocal = range.start;
+        const endLocal = range.end;
+        const displayEndLocal = range.displayEnd;
+        const dayOffset = dayIndex * MINUTES_PER_DAY;
+        const absStart = dayOffset + startLocal;
+        const absEnd = dayOffset + displayEndLocal;
+        const startPx = minuteToPx(absStart);
+        let endPx = minuteToPx(absEnd);
+        if(!Number.isFinite(endPx) || endPx <= startPx){
+          endPx = startPx + MIN_LANE_EVENT_WIDTH;
+        } else if(endPx - startPx < MIN_LANE_EVENT_WIDTH){
+          endPx = startPx + MIN_LANE_EVENT_WIDTH;
         }
-        let end = endLocal;
-        if(!Number.isFinite(end) || end <= start){
-          end = start + MIN_EVENT_MIN;
-        }
-        const minDurationMinutes = MIN_LANE_EVENT_WIDTH / meta.pxPerMin;
-        const visualDuration = Math.max(end - start, minDurationMinutes);
-        const absStart = dayIndex * MINUTES_PER_DAY + start;
-        const absEnd = absStart + visualDuration;
         items.push({
           event: ev,
-          absStart,
-          absEnd,
-          displayDuration: visualDuration,
-          startLocal: start,
-          endLocal: end,
+          absStartMin: absStart,
+          absEndMin: absEnd,
+          startPx,
+          endPx,
+          widthPx: endPx - startPx,
+          startLocal,
+          endLocal,
           dayIndex,
+          iso: ev.date,
           order: ev.row_order ?? 0
         });
       }
-      items.sort((a,b)=> (a.absStart - b.absStart) || (a.order - b.order));
+      items.sort((a,b)=> (a.absStartMin - b.absStartMin) || (a.order - b.order));
       const laneEnd = [];
       let lanes = 0;
       for(const item of items){
         let placed = false;
         for(let i=0;i<laneEnd.length;i++){
-          if(item.absStart >= laneEnd[i]){
+          if(item.startPx >= laneEnd[i] - 1){
             item.lane = i;
-            laneEnd[i] = item.absEnd;
+            laneEnd[i] = Math.max(laneEnd[i], item.endPx);
             placed = true;
             break;
           }
         }
         if(!placed){
           item.lane = laneEnd.length;
-          laneEnd.push(item.absEnd);
+          laneEnd.push(item.endPx);
         }
         lanes = Math.max(lanes, item.lane + 1);
       }
@@ -1121,7 +1304,7 @@
 
       const timeline = document.createElement('div');
       timeline.className = 'lane-timeline';
-      timeline.style.setProperty('--day-width', `${meta.dayWidth}px`);
+
       const inner = document.createElement('div');
       inner.className = 'lane-timeline-inner';
       inner.style.width = `${meta.timelineWidth}px`;
@@ -1130,14 +1313,30 @@
       const laneRows = Math.max(1, laneCount);
       inner.style.height = `calc(${laneRows} * var(--lane-row-height))`;
 
+
+      const guides = document.createElement('div');
+      guides.className = 'lane-guides';
+      const addGuideLine = (position, cls, inactive=false) => {
+        if(!Number.isFinite(position)) return;
+        const line = document.createElement('div');
+        line.className = `guide ${cls}` + (inactive ? ' inactive' : '');
+        line.style.left = `${position}px`;
+        guides.appendChild(line);
+      };
+      if(meta.guides){
+        if(Array.isArray(meta.guides.days)) meta.guides.days.forEach(pos => addGuideLine(pos, 'day'));
+        if(Array.isArray(meta.guides.quarters)) meta.guides.quarters.forEach(g => addGuideLine(g.position, 'quarter', !g.active));
+        if(Array.isArray(meta.guides.hours)) meta.guides.hours.forEach(pos => addGuideLine(pos, 'hour'));
+      }
+      inner.appendChild(guides);
+
+
       for(const item of items){
         const ev = item.event;
         const card = document.createElement('article');
         card.className = 'lane-event';
-        card.style.left = `${item.absStart * meta.pxPerMin}px`;
-        const widthMinutes = item.displayDuration ?? (item.absEnd - item.absStart);
-        const width = Math.max(widthMinutes * meta.pxPerMin, MIN_LANE_EVENT_WIDTH);
-        card.style.width = `${width}px`;
+        card.style.left = `${item.startPx}px`;
+        card.style.width = `${item.widthPx}px`;
         card.style.top = `calc(${item.lane} * var(--lane-row-height))`;
         card.style.setProperty('--lane-color', color.color);
         card.style.setProperty('--lane-pill-bg', color.pillBg);
@@ -1147,16 +1346,12 @@
 
         const timeDiv = document.createElement('div');
         timeDiv.className = 'time';
-        const iso = ev.date || isoFromMs(meta.minMs + item.dayIndex*DAY_MS);
-        const label = formatAxisLabel(iso, meta.minMs + item.dayIndex*DAY_MS);
+        const fallbackMs = meta.days && meta.days[item.dayIndex] ? meta.days[item.dayIndex].ms : undefined;
+        const iso = item.iso || (meta.days && meta.days[item.dayIndex] ? meta.days[item.dayIndex].iso : null);
+        const label = formatAxisLabel(iso, fallbackMs);
         const range = describeTimeRange(item);
         timeDiv.textContent = `${label} · ${range}`;
         card.appendChild(timeDiv);
-
-        const desc = document.createElement('div');
-        desc.className = 'desc';
-        desc.textContent = ev.desc || '';
-        card.appendChild(desc);
 
         if(ev.entities && ev.entities.length){
           const other = ev.entities.filter(name => slugify(name) !== rec.slug);
@@ -1229,24 +1424,38 @@
     function renderAxis(meta){
       horizontalAxis.innerHTML = '';
       horizontalAxis.style.width = `${meta.timelineWidth}px`;
-      for(let i=0; i<meta.totalDays; i++){
-        const dayMs = meta.minMs + i * DAY_MS;
-        const iso = isoFromMs(dayMs);
+      if(!Array.isArray(meta.days) || !meta.days.length){
+        horizontalAxis.innerHTML = '<div class="axis-day"><span class="axis-label">Geen data beschikbaar</span></div>';
+        return;
+      }
+      for(const dayInfo of meta.days){
+        const width = Math.max(dayInfo.width, 8);
         const day = document.createElement('div');
         day.className = 'axis-day';
-        day.style.width = `${meta.dayWidth}px`;
+        day.style.width = `${width}px`;
+        day.style.flex = `0 0 ${width}px`;
         const label = document.createElement('span');
         label.className = 'axis-label';
-        label.textContent = formatAxisLabel(iso, dayMs);
+        label.textContent = formatAxisLabel(dayInfo.iso, dayInfo.ms);
         day.appendChild(label);
         const range = document.createElement('span');
         range.className = 'axis-range';
-        range.textContent = '00:00 – 24:00';
+        const detailParts = [];
+        if(dayInfo.hasTimed){
+          const activeQuarters = dayInfo.quarterInfo ? dayInfo.quarterInfo.filter(q => q && q.hasEvents).length : 0;
+          if(activeQuarters >= 4) detailParts.push('Uur detail hele dag');
+          else if(activeQuarters > 0) detailParts.push(`Detail in ${activeQuarters} kwartier${activeQuarters>1?'en':''}`);
+          if(dayInfo.timedCount) detailParts.push(`${dayInfo.timedCount} met tijd`);
+        }
+        if(dayInfo.dateOnlyCount) detailParts.push(`${dayInfo.dateOnlyCount} zonder tijd`);
+        if(!detailParts.length) detailParts.push('Geen gebeurtenissen');
+        range.textContent = detailParts.join(' · ');
         day.appendChild(range);
         horizontalAxis.appendChild(day);
       }
       horizontalAxis.style.transform = 'translateX(0px)';
     }
+
 
     function renderHorizontalTimeline(){
       const meta = computeHorizontalMeta();
